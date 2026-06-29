@@ -1,0 +1,5 @@
+SpeechRecognition
+google-generativeai
+mss
+pyautogui
+Pillow
