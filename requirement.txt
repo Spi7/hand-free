@@ -1,6 +1,11 @@
+# Phase 1
 Pillow
-
+ 
+# Phase2
 SpeechRecognition
+PyAudio
+
+
 google-generativeai
 mss
 pyautogui
