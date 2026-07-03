@@ -1,0 +1,6 @@
+assets/ -> this folder will be use for mascot images, sounds, & icons
+core/ -> this is the brain where AI, vision (ss), decision making would come into play
+ui/ -> anything front end or visuals take place (mascot window, popups, etc.)
+voice/ -> future for wake word, speech recognition, mic input
+utils/ -> shared helpers, screenshots, configs, logging
+ 
