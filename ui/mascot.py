@@ -48,6 +48,7 @@ def build_mascot():
 
     # Make the mascot draggable around the screen
     make_draggable(root=root, widget=canvas)
+    root.bind("<FocusIn>", lambda e: root.geometry(f"{width}x{height}+{root.winfo_x()}+{root.winfo_y()}"))
 
     root.after(100, root.focus_force)
     root.mainloop() # starts an inf loop that keeps window alive to listen for events
