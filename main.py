@@ -1,9 +1,12 @@
 import os
+from dotenv import load_dotenv
 
 from ui.mascot import build_mascot
 from utils.screenshot import capture_screen
 from voice.listener import start_listening
 from core.agent import process_command
+
+load_dotenv()
 
 def on_command(text):
     # this is callback func passed to start_listening

@@ -1,42 +1,87 @@
-import speech_recognition as sr
+import os
+import wave
+import tempfile
 import threading
+import audioop
+import pyaudio
+import re
+from groq import Groq
+
+RATE = 16000
+CHUNK = 1024
+RECORD_SECONDS = 4
+WAKE_WORD = "hello siri"
+VOLUME_THRESHOLD = 400  
+
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def start_listening(on_command):
-    # on_command would be a callback func - when a command is head
-    # we call on_command(text) to pass the result back to main.py
 
     def listen_loop():
-        wake_word = "hello siri"
-        recognizer = sr.Recognizer()
-        recognizer.dynamic_energy_threshold = True
-        mic = sr.Microphone()
-
+        audio = pyaudio.PyAudio()
         print("Listening...")
 
         while True:
-            with mic as source:
-                # TODO: adjust for ambient noise so it does not mishear background sounds
-                recognizer.adjust_for_ambient_noise(source, duration=1)
+            # record audio from mic
+            stream = audio.open(
+                format=pyaudio.paInt16,
+                channels=1,
+                rate=RATE,
+                input=True,
+                frames_per_buffer=CHUNK
+            )
 
+            frames = []
+            for _ in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
+                data = stream.read(CHUNK)
+                frames.append(data)
 
-                # TODO: listen for audio input
-                audio = recognizer.listen(source)
+            stream.stop_stream()
+            stream.close()
+
+            # check volume before sending to Groq
+            raw_audio = b''.join(frames)
+            rms = audioop.rms(raw_audio, 2)
+
+            # save to temp wav file
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                tmp_path = tmp.name
+
+            with wave.open(tmp_path, 'wb') as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(audio.get_sample_size(pyaudio.paInt16))
+                wf.setframerate(RATE)
+                wf.writeframes(raw_audio)
 
             try:
-                #TODO: convert audio to text using Google's free speech recognition
-                text = recognizer.recognize_google(audio)
-                print(f"Heard: {text}")
+                if rms < VOLUME_THRESHOLD:
+                    continue  # skip — too quiet, likely background noise
 
-                #TODO: check if the wake word is in the text
-                # if it is, extract the command and call on_command()
-                if wake_word in text.lower():
-                    command = text.lower().replace(wake_word, "").strip()
-                    on_command(command)
+                with open(tmp_path, "rb") as audio_file:
+                    transcription = client.audio.transcriptions.create(
+                        model="whisper-large-v3",
+                        file=audio_file,
+                        language="en",
+                        prompt="Hello Siri, exit, open, click, search"  # hint expected words
+                    )
 
-            except sr.UnknownValueError:
-                pass #couldn't understand audo -> keep listening later change to error msg
-            except sr.RequestError as e:
-                print(f"API Error: {e}")
-        
-    thread = threading.Thread(target=listen_loop, daemon=True) # daemon thread -> dies automatically when main program exits
+                text = re.sub(r'[^\w\s]', '', transcription.text).strip().lower()
+
+                if not text:
+                    continue
+
+                print(f"Heard: {text} (volume: {rms})")
+
+                if WAKE_WORD in text:
+                    command = text.replace(WAKE_WORD, "").strip()
+                    if command:
+                        on_command(command)
+
+            except Exception as e:
+                print(f"Transcription error: {e}")
+
+            finally:
+                os.remove(tmp_path)
+
+    thread = threading.Thread(target=listen_loop, daemon=True)
     thread.start()
