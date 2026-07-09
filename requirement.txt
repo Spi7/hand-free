@@ -5,7 +5,11 @@ Pillow
 SpeechRecognition
 PyAudio
 
-
-google-generativeai
+# Phase 3
 mss
+
+# Phase 4
+python-dotenv
+google-genai
+
 pyautogui
