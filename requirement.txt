@@ -2,7 +2,7 @@
 Pillow
  
 # Phase2
-SpeechRecognition
+# SpeechRecognition
 PyAudio
 
 # Phase 3
@@ -12,4 +12,6 @@ mss
 python-dotenv
 google-genai
 
+# Phase 5
 pyautogui
+gradio_client

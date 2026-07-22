@@ -51,7 +51,7 @@ def build_mascot():
     root.bind("<FocusIn>", lambda e: root.geometry(f"{width}x{height}+{root.winfo_x()}+{root.winfo_y()}"))
 
     root.after(100, root.focus_force)
-    root.mainloop() # starts an inf loop that keeps window alive to listen for events
+    return root # for popups use
 
     
     # -> Create words & Buttons for the window frame created

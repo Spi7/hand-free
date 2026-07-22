@@ -1,0 +1,13 @@
+{
+    "omniparser": {
+        "python_path": "PATH_TO_YOUR_OMNI_PYTHON_EXE",
+        "dir": "PATH_TO_OMNIPARSER_FOLDER",
+        "script": "gradio_demo.py",
+        "port": 7861,
+        "startup_wait": 20
+    },
+
+    "gemini": {
+        "model": "gemini-2.5-flash"
+    }
+}
