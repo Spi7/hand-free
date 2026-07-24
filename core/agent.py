@@ -11,6 +11,7 @@ from utils.config import config
 
 gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 omni_client = None
+TASK_KEY = ["open", "click", "search", "find", "launch", "start", "go to", "type", "scroll", "press"]
 
 def get_omni_client():
     global omni_client
@@ -26,7 +27,7 @@ def parse_screen(screenshot):
     
     try:
         client = get_omni_client()
-        result = omni_client.predict(
+        result = client.predict(
             image_input = handle_file(tmp_path),
             box_threshold = 0.05,
             iou_threshold = 0.1,
@@ -60,6 +61,24 @@ def parse_elements(element_str):
                 continue
     return elements
 
+def classify_intent(text):
+    text_lower = text.lower()
+    for keyword in TASK_KEY:
+        if keyword in text_lower:
+            return "task"
+    return "conversation"
+
+def get_conversation_response(text):
+    response = gemini_client.models.generate_content(
+        model=config["gemini"]["model"],
+        contents=[f"""
+        You are a helpful desktop AI assistant mascot.
+        The user said: '{text}'
+        Reply in one short sentence, friendly and concise.
+        """]
+    )
+    return response.text.strip()
+
 def process_command(command, screenshot):
 
     width = screenshot.width
@@ -69,10 +88,14 @@ def process_command(command, screenshot):
     element_str = parse_screen(screenshot)
     elements = parse_elements(element_str)
 
+    # for i, el in enumerate(elements):
+    #     print(f"  {i}: {el.get('content', '')}")
+
     # keep prompt minimized
     simplified = []
     for i, element in enumerate(elements):
-        simplified.append({"index": i, "content": element.get("content", "")})
+        if element.get("interactivity") == True:
+            simplified.append({"index": i, "content": element.get("content", "")})
     
     # TODO: send prompt + screenshot to Gemini
     match_prompt = f"""
@@ -122,7 +145,6 @@ def process_command(command, screenshot):
     x = (xmin + xmax) // 2
     y = (ymin + ymax) // 2
 
-    print(f"Found: {element['content']} at ({x}, {y})")
     print(f"Found: {element.get('content', 'unknown')} at ({x}, {y})")
 
     return {"action": "click", "x": x, "y": y, "click_type": match.get("click_type", None), "reasoning": match.get("reasoning")}

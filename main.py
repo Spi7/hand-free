@@ -11,7 +11,7 @@ from ui.popup import show_popup
 from utils.screenshot import capture_screen
 from utils.config import config
 from voice.listener import start_listening
-from core.agent import process_command
+from core.agent import process_command, classify_intent, get_conversation_response
 
 load_dotenv()
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
@@ -46,6 +46,15 @@ def on_command(root, text):
 
     if "exit" in text and "program" in text:
         os._exit(0)
+
+    intent = classify_intent(text)
+    print(f"Intent: {intent}")
+
+    if intent == "conversation":
+        response = get_conversation_response(text)
+        root.after(0, lambda: show_popup(root, response))
+        return
+    
     
     # # take a ss and print its size to confirm it works for now
     ss = capture_screen()
@@ -67,9 +76,7 @@ def on_command(root, text):
         elif click_type == "double":
             pyautogui.doubleClick()
     elif result.get("action") == "not_found":
-        print("Attempting popup...")
         root.after(0, lambda: show_popup(root, "Could not find target on screen."))
-        print("root.after called")
     # print(f"Screenshot captured: {ss.size}")
 
 if __name__ == "__main__":
